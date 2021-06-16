@@ -9,7 +9,8 @@ if [ $SUDO_USER ]; then
 else
   real_user=$(whoami)
 fi
-echo $real_user
+
+HOME_DIR=$(runuser - fymyte -c 'echo $HOME')
 
 INSTALL_DIR=$(pwd)
 
@@ -38,6 +39,10 @@ PACKAGES=" \
   xclip \
   lightdm \
   lightdm-webkit2-greeter \
+  xautolock \
+  pavucontrol \
+  bc \
+  imagemagick \
   "
 
 AUR_PACKAGES="\
@@ -45,6 +50,7 @@ AUR_PACKAGES="\
   nerd-fonts-mononoki \
   lightdm-webkit-theme-aether \
   brave-bin \
+  i3lock-color \
   "
 
 as_user() {
@@ -52,7 +58,7 @@ as_user() {
 }
 
 ask_confirmation() {
-  read -p "Do you want to continue ? [y/n] " -n 1 -r
+  read -p "$1 [y/n] " -n 1 -r
   echo
   if ! [[ $REPLY =~ [Yy]$ ]]; then
     RETURN=1
@@ -65,78 +71,65 @@ ask_exit() {
   read -p "Do you want to continue ? [y/n] " -n 1 -r
   echo
   if ! [[ $REPLY =~ [Yy]$ ]]; then
-    echo_warning "Stopping"
+    echof act "Stopping"
     exit 1
     return
   fi
 }
 
-echo_info() {
-  echo -e -n "\e[1;32m"
-  echo -n $@
-  echo -e "\e[0m"
-}
+echof() {
+	local prefix="$1"
+	local message="$2"
 
-echo_warning() {
-  echo -e -n "\e[38;5;214m"
-  echo -n $@
-  echo -e "\e[0m"
-}
+  local flags="-e"
 
-echo_error() {
-  echo -e -n "\e[38;5;160m"
-  echo -n $@
-  echo -e "\e[0m"
+	case "$prefix" in
+		header) msgpfx="[\e[1;95mm\e[m]";;
+		info) msgpfx="[\e[1;97m=\e[m]";;
+		act) flags="-en";msgpfx="[\e[1;92m*\e[m]";;
+		ok) msgpfx="[\e[1;93m+\e[m]";;
+		error) msgpfx="[\e[1;91m!\e[m]";;
+		*) msgpfx="";;
+	esac
+	echo $flags "$msgpfx $message "
 }
 
 install_packages() {
   cd $INSTALL_DIR
-  echo_info "The following packages will be installed:"
-  for package in $PACKAGES; do 
-    echo $package
-  done
-
-  ask_exit
-
-  echo 'pacman --noconfirm -S $PACKAGES > /dev/null'
+  echof act "Installing packages from arch repo ..."
+  echo pacman --noconfirm -S $PACKAGES > /dev/null
+  echo Done
 }
 
 install_aur_packages() {
   cd $INSTALL_DIR
-  echo_info "Paru will be installed"
+  echof act "Installing paru ..."
 
-  ask_exit
-
-  as_user git clone https://aur.archlinux.org/paru.git
+  as_user git clone --quiet https://aur.archlinux.org/paru.git
   cd paru
   # build with all cpu cores
   export MAKEFLAGS="-j$(nproc)"
   echo as_user makepkg -si
+  echo Done
 
-  echo_info "The following packages will be installed:"
-  for package in $AUR_PACKAGES; do 
-    echo $package
-  done
+  echof act "Installing packages from AUR ..."
 
-  ask_confirmation
-  [ $RETURN = 0 ] && echo as_user paru -p -S $AUR_PACKAGES
+  echo as_user paru --useask --noconfirm -S $AUR_PACKAGES >/dev/null
+  echo Done
 }
 
 # Here is the description of the function
 install_lightdm() {
   systemctl enable lightdm
 
-  echo_info "Modify lightdm config now ?"
-
-  ask_confirmation
+  ask_confirmation "Edit lightdm config now ?"
   [ $RETURN = 0 ] && nvim /etc/lightdm/lightdm.conf 
 }
 
 install_oh_my_zsh() {
   cd $INSTALL_DIR
-  echo_info "Oh-my-zsh will be installed"
   
-  ask_confirmation
+  ask_confirmation "Install Oh-my-zsh now ?"
   if [ $RETURN = 0 ]; then
     [[ ! -d oh-my-zsh ]] && as_user mkdir oh-my-zsh
 
@@ -144,33 +137,55 @@ install_oh_my_zsh() {
 
     cd oh-my-zsh
     as_user chmod +x install.sh
-    as_user RUNZSH=no bash ./install.sh
+    as_user RUNZSH=no bash ./install.sh > /dev/null
 
-    echo_info "Installing own config"
+    echof info "Installing own config"
     as_user git clone git@github.com:Fymyte/zsh-config.git
     cd zsh-config
     as_user bash install.sh
   fi
 }
 
+install_config_files() {
+  echof act "Fetching config files from github ..."
+  cd $HOME_DIR/.config
+  [[ ! -d .git ]] && as_user git init
+  [[ $(git remote | grep origin) ]] || as_user git remote add origin git@github.com:Fymyte/configs.git
+  as_user git pull --quiet origin main --recurse-submodules
+  echo Done
+
+  echof act "Updating remote from submodules ..."
+
+  for dir in *; do
+    [[ ! -d $dir ]] && continue
+    pushd $dir > /dev/null
+    if [[ -d .git ]]; then
+      as_user git pull --quiet origin main
+    fi
+    popd > /dev/null
+  done
+  echo Done
+}
+
 install_ssh() {
-  echo_info "Creating ssh key-pair"
+  echof info "Creating ssh key-pair"
 
   ask_confirmation
   [ $RETURN = 0 ] && ssh-keygen -b 4096
 }
 
 main() {
-  echo_info "Installing packages ..."
+  echof info "Installing packages ..."
   install_packages
   install_aur_packages
 
-  echo_info "Installing lightdm ..."
+  echof info "Installing lightdm ..."
   install_lightdm
 
-  echo_info "Installing configuration files ..."
+  echof info "Installing configuration files ..."
   install_oh_my_zsh
-  
+  install_config_files
+
   install_ssh
 }
 
