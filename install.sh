@@ -11,38 +11,44 @@ else
 fi
 
 HOME_DIR=$(runuser - fymyte -c 'echo $HOME')
-
 INSTALL_DIR=$(pwd)
 
-PACKAGES=" \
+# By default, do not install graphical interface (only COMMOM_PACKAGES)
+install_graphics=false
+
+COMMOM_PACKAGES=" \
   base-devel \
-  alacritty \
   neovim \
-  firefox \
   git \
-  i3-gaps \
   networkmanager \
   openssh \
-  pulseaudio \
-  rofi \
   sudo \
   tree \
   xorg \
   zsh \
   htop \
   grub \
-  nitrogen \
   npm \
-  picom \
   bat \
   exa \
   xclip \
+  bc \
+  "
+
+GRAPHICAL_PACKAGES=" \
+  alacritty \
+  pulseaudio \
+  imagemagick \
+  xdg-user-dirs \
   lightdm \
   lightdm-webkit2-greeter \
   xautolock \
   pavucontrol \
-  bc \
-  imagemagick \
+  picom \
+  nitrogen \
+  rofi \
+  i3-gaps \
+  firefox \
   "
 
 AUR_PACKAGES="\
@@ -51,6 +57,7 @@ AUR_PACKAGES="\
   lightdm-webkit-theme-aether \
   brave-bin \
   i3lock-color \
+  multimonitorlock \
   "
 
 as_user() {
@@ -97,7 +104,11 @@ echof() {
 install_packages() {
   cd $INSTALL_DIR
   echof act "Installing packages from arch repo ..."
-  echo pacman --noconfirm -S $PACKAGES > /dev/null
+  local additional_packages=""
+  if [ $install_graphics = true ]; then
+    additional_packages="$AUR_PACKAGES"
+  fi
+  bash -c "pacman -S $COMMOM_PACKAGES $additional_packages && exit"
   echo Done
 }
 
@@ -109,18 +120,20 @@ install_aur_packages() {
   cd paru
   # build with all cpu cores
   export MAKEFLAGS="-j$(nproc)"
-  echo as_user makepkg -si
+  as_user makepkg -si | less
   echo Done
 
   echof act "Installing packages from AUR ..."
 
-  echo as_user paru --useask --noconfirm -S $AUR_PACKAGES >/dev/null
+  as_user bash -c "paru -S $AUR_PACKAGES && exit"
   echo Done
 }
 
 # Here is the description of the function
 install_lightdm() {
+  echof act "Enabling lightdm ..."
   systemctl enable lightdm
+  echo Done
 
   ask_confirmation "Edit lightdm config now ?"
   [ $RETURN = 0 ] && nvim /etc/lightdm/lightdm.conf 
@@ -140,7 +153,7 @@ install_oh_my_zsh() {
     as_user RUNZSH=no bash ./install.sh > /dev/null
 
     echof info "Installing own config"
-    as_user git clone git@github.com:Fymyte/zsh-config.git
+    as_user git clone --quiet git@github.com:Fymyte/zsh-config.git
     cd zsh-config
     as_user bash install.sh
   fi
@@ -168,7 +181,7 @@ install_config_files() {
 }
 
 install_ssh() {
-  echof info "Creating ssh key-pair"
+  echof act "Creating ssh key-pair"
 
   ask_confirmation
   [ $RETURN = 0 ] && ssh-keygen -b 4096
@@ -179,7 +192,7 @@ main() {
   install_packages
   install_aur_packages
 
-  echof info "Installing lightdm ..."
+  echof info "Installing display manager ..."
   install_lightdm
 
   echof info "Installing configuration files ..."
@@ -189,5 +202,31 @@ main() {
   install_ssh
 }
 
+usage() {
+  echo
+  echo "Usage: install [arguments]"
+  echo
+  echo " -g --graphical"
+  echo "      Install graphical interface"
+}
+
+for arg in "$@"; do
+  # Skip non argument
+  [[ "${arg:0:1}" = '-' ]] || continue
+
+  case "$1" in
+    -g | --graphical)
+      install_graphics=true
+      shift 1
+      ;;
+    --)
+      break
+      ;;
+    -h | --help | *)
+      usage
+      exit 0
+      ;;
+  esac
+done
+
 main
-  
