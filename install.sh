@@ -180,6 +180,12 @@ install_config_files() {
     fi
     popd > /dev/null
   done
+
+  echof act "Installing additional fonts ..."
+  as_user git clone --quiet https://github.com/Fymyte/polybar-themes
+  pushd polybar-themes > /dev/null
+  as_user bash setup.sh > /dev/null
+  popd > /dev/null
   echo Done
 }
 
