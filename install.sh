@@ -33,6 +33,7 @@ COMMOM_PACKAGES=" \
   exa \
   xclip \
   bc \
+  rustup \
   "
 
 GRAPHICAL_PACKAGES=" \
@@ -115,6 +116,9 @@ install_packages() {
 
 install_aur_packages() {
   cd $INSTALL_DIR
+  echof act "Installing rustup stable toolchain ..."
+  as_user rustup install stable > /dev/null
+  echo Done
   echof act "Installing paru ..."
 
   as_user git clone --quiet https://aur.archlinux.org/paru.git
@@ -180,6 +184,8 @@ install_config_files() {
     fi
     popd > /dev/null
   done
+
+  echo Done
 
   echof act "Installing additional fonts ..."
   as_user git clone --quiet https://github.com/Fymyte/polybar-themes
