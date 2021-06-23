@@ -40,8 +40,8 @@ GRAPHICAL_PACKAGES=" \
   pulseaudio \
   imagemagick \
   xdg-user-dirs \
-  lightdm \
   lightdm-webkit2-greeter \
+  lightdm \
   xautolock \
   pavucontrol \
   picom \
@@ -108,7 +108,7 @@ install_packages() {
   if [ $install_graphics = true ]; then
     additional_packages="$AUR_PACKAGES"
   fi
-  bash -c "pacman -S $COMMOM_PACKAGES $additional_packages && exit"
+  pacman -S $COMMOM_PACKAGES $additional_packages
   echo Done
 }
 
@@ -120,12 +120,12 @@ install_aur_packages() {
   cd paru
   # build with all cpu cores
   export MAKEFLAGS="-j$(nproc)"
-  as_user makepkg -si | less
+  as_user makepkg -si
   echo Done
 
   echof act "Installing packages from AUR ..."
 
-  as_user bash -c "paru -S $AUR_PACKAGES && exit"
+  as_user paru -S $AUR_PACKAGES
   echo Done
 }
 
@@ -152,8 +152,8 @@ install_oh_my_zsh() {
     as_user chmod +x install.sh
     as_user RUNZSH=no bash ./install.sh > /dev/null
 
-    echof info "Installing own config"
-    as_user git clone --quiet git@github.com:Fymyte/zsh-config.git
+    echof act "Installing own config"
+    as_user git clone --quiet https://github.com/Fymyte/zsh-config
     cd zsh-config
     as_user bash install.sh
   fi
@@ -163,7 +163,7 @@ install_config_files() {
   echof act "Fetching config files from github ..."
   cd $HOME_DIR/.config
   [[ ! -d .git ]] && as_user git init
-  [[ $(git remote | grep origin) ]] || as_user git remote add origin git@github.com:Fymyte/configs.git
+  [[ $(git remote | grep origin) ]] || as_user git remote add origin https://github.com/Fymyte/configs
   as_user git pull --quiet origin main --recurse-submodules
   echo Done
 
