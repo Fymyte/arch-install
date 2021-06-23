@@ -106,7 +106,7 @@ install_packages() {
   echof act "Installing packages from arch repo ..."
   local additional_packages=""
   if [ $install_graphics = true ]; then
-    additional_packages="$AUR_PACKAGES"
+    additional_packages="$GRAPHICAL_PACKAGES"
   fi
   pacman -S $COMMOM_PACKAGES $additional_packages
   echo Done
