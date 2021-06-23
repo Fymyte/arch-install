@@ -54,6 +54,7 @@ GRAPHICAL_PACKAGES=" \
 AUR_PACKAGES="\
   polybar \
   nerd-fonts-mononoki \
+  ttf-font-awesome \
   lightdm-webkit-theme-aether \
   brave-bin \
   i3lock-color \
@@ -165,6 +166,8 @@ install_config_files() {
   [[ ! -d .git ]] && as_user git init
   [[ $(git remote | grep origin) ]] || as_user git remote add origin https://github.com/Fymyte/configs
   as_user git pull --quiet origin main --recurse-submodules
+  as_user git submodule update --init --recursive
+  as_user git submodule update --recursive --remote
   echo Done
 
   echof act "Updating remote from submodules ..."
