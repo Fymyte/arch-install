@@ -199,9 +199,11 @@ install_config_files() {
 }
 
 install_themes() {
-  echof act "Installing Qoqir theme ..."
+  echof act "Installing Qogir theme ..."
   git clone --quiet https://github.com/vinceliuice/Qogir-theme.git
   Qogir-theme/install.sh > /dev/null
+  git clone --quiet https://github.com/vinceliuice/Qogir-icon-theme.git
+  Qogir-icon-theme/install.sh > /dev/null
   echo done
 
   echof act "Installing vimix icon theme ..."
