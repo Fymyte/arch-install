@@ -51,6 +51,8 @@ GRAPHICAL_PACKAGES=" \
   i3-gaps \
   firefox \
   lxappearance \
+  nautilus \
+  xarchiver \
   "
 
 AUR_PACKAGES="\
