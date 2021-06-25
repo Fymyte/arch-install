@@ -50,6 +50,7 @@ GRAPHICAL_PACKAGES=" \
   rofi \
   i3-gaps \
   firefox \
+  lxappearance \
   "
 
 AUR_PACKAGES="\
@@ -195,6 +196,18 @@ install_config_files() {
   echo Done
 }
 
+install_themes() {
+  echof act "Installing Qoqir theme ..."
+  git clone --quiet https://github.com/vinceliuice/Qogir-theme.git
+  Qogir-theme/install.sh > /dev/null
+  echo done
+
+  echof act "Installing vimix icon theme ..."
+  git clone --quiet https://github.com/vinceliuice/vimix-icon-theme.git
+  vimix-icon-theme/install.sh > /dev/null
+  echo Done
+}
+
 install_ssh() {
   echof act "Creating ssh key-pair"
 
@@ -213,6 +226,7 @@ main() {
   echof info "Installing configuration files ..."
   install_oh_my_zsh
   install_config_files
+  install_themes
 
   install_ssh
 }
